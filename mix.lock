@@ -1,0 +1,4 @@
+[ "erlzmq": {:git, "git://github.com/zeromq/erlzmq2.git", "be8119254d13500bd01ca2d90637888187299393", []},
+  "erlzmq2": {:git, "git://github.com/zeromq/erlzmq2.git", "be8119254d13500bd01ca2d90637888187299393", []},
+  "jsex": {:git, "git://github.com/talentdeficit/jsex.git", "3db1d520e00fb28c3eee4e5b30645d5878037c38", []},
+  "jsx": {:git, "git://github.com/talentdeficit/jsx.git", "e50af6e109cb03bd26acf715cbc77de746507d1d", [tag: "v1.4.3"]} ]
