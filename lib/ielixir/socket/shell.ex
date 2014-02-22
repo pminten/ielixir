@@ -24,8 +24,8 @@ defmodule IElixir.Socket.Shell do
     case MsgBuffer.store_part(msg, flags, buffer) do
       { :buffer, new_buffer } ->
         { :noreply, { sock, new_buffer } }
-      { :msg, rawmsg } ->
-        process(rawmsg)
+      { :msg, msg } ->
+        process(msg, sock)
         { :noreply, { sock, MsgBuffer.new } }
     end
   end
@@ -35,9 +35,18 @@ defmodule IElixir.Socket.Shell do
   end
 
   ## Internals
-  
-  defp process(rawmsg) do
-    Lager.info("Got shell: #{inspect rawmsg}")
+
+  defp process(msg = IElixir.Msg[msg_type: :kernel_info_request], sock) do
+    { :ok, version } = Version.parse(System.version)
+    content = [
+      protocol_version: [3, 2],
+      language_version: [version.major, version.minor, version.patch],
+      language: "elixir"
+    ]
+    Common.respond(sock, msg, :kernel_info_reply, content)
+  end
+  defp process(msg) do
+    Lager.info("Got shell: #{inspect msg}")
     ## TODO
   end
 end

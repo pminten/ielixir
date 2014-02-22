@@ -38,6 +38,7 @@ defmodule Ielixir.Mixfile do
   defp deps do
     [ { :erlzmq, github: "zeromq/erlzmq2" },
       { :exjson, github: "guedes/exjson" },
-      { :exlager, github: "khia/exlager" } ]
+      { :exlager, github: "khia/exlager" },
+      { :uuid, github: "okeuday/uuid" } ]
   end
 end

@@ -24,8 +24,8 @@ defmodule IElixir.Socket.Stdin do
     case MsgBuffer.store_part(msg, flags, buffer) do
       { :buffer, new_buffer } ->
         { :noreply, { sock, new_buffer } }
-      { :msg, rawmsg } ->
-        process(rawmsg)
+      { :msg, msg } ->
+        process(msg)
         { :noreply, { sock, MsgBuffer.new } }
     end
   end
@@ -36,7 +36,7 @@ defmodule IElixir.Socket.Stdin do
 
   ## Internals
   
-  defp process(rawmsg) do
+  defp process(msg) do
     ## TODO
   end
 end

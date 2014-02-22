@@ -20,9 +20,8 @@ defmodule IElixir.Socket.Heartbeat do
     :erlzmq.close(sock)
   end
 
-  def handle_info({ :zmq, _, ts, [] }, state = { sock, id }) do
-    Lager.info("Got heartbeat: #{inspect ts}")
-    Common.send_all(sock, [ id, ts ])
+  def handle_info({ :zmq, _, data, [] }, state = { sock, id }) do
+    :erlzmq.send(sock, data)
     { :noreply, state }
   end
   def handle_info(msg, state) do

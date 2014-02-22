@@ -24,8 +24,8 @@ defmodule IElixir.Socket.Control do
     case MsgBuffer.store_part(msg, flags, buffer) do
       { :buffer, new_buffer } ->
         { :noreply, { sock, new_buffer } }
-      { :msg, rawmsg } ->
-        process(rawmsg)
+      { :msg, msg } ->
+        process(msg)
         { :noreply, { sock, MsgBuffer.new } }
     end
   end
@@ -36,8 +36,8 @@ defmodule IElixir.Socket.Control do
 
   ## Internals
   
-  defp process(rawmsg) do
-    Lager.warn("Got control: #{inspect rawmsg}")
+  defp process(msg) do
+    Lager.warn("Got control: #{inspect msg}")
     ## TODO
   end
 end

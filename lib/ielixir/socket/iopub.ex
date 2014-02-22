@@ -18,19 +18,4 @@ defmodule IElixir.Socket.IOPub do
   def terminate(_reason, { sock, _ } ) do
     :erlzmq.close(sock)
   end
-
-  def handle_info({ :zmq, _, msg, flags }, { sock, buffer }) do
-    case MsgBuffer.store_part(msg, flags, buffer) do
-      { :buffer, new_buffer } -> { :ok, { sock, new_buffer } }
-      { :msg, rawmsg } ->
-        process(rawmsg)
-        { :ok, { sock, MsgBuffer.new } }
-    end
-  end
-
-  ## Internals
-  
-  defp process(rawmsg) do
-    ## TODO
-  end
 end

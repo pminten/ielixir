@@ -1,13 +1,19 @@
-defrecord IElixir.RawMsg, uuids: [], header: nil, parent_header: nil, 
-                          metadata: nil, content: nil, blobs: [] do
+defrecord IElixir.Msg, uuids: [],
+                       msg_id: nil, msg_type: nil,
+                       username: nil, session: nil,
+                       parent_header: nil,
+                       metadata: nil, content: nil, blobs: [] do
   @moduledoc """
-  An uninterpreted message.
+  A decoded but otherwise uninterpreted message.
+
+  Compared the over-the-wire message the hmac field is missing and the header
+  fields have been merged into the top level IElixir.Msg.
   """
 end
 
 defexception IElixir.SignatureError, message: nil
 
-defmodule IElixir.Msg do
+defmodule IElixir.MsgConv do
   @moduledoc """
   Message parsing/serialization.
   """
@@ -21,7 +27,7 @@ defmodule IElixir.Msg do
   def decode(parts) do
     case Enum.split_while(parts, &(&1 != "<IDS|MSG>")) do
       { _, [] } -> raise ArgumentError, message: "No <IDS|MSG> found"
-      { uuids, [ _sep, sig, header_str, parent_header_str, 
+      { uuids, [ _sep, sig, header_str, parent_header_str,
                  metadata_str, content_str | blobs ] } ->
         computed_sig = IElixir.HMAC.compute_sig(header_str, parent_header_str,
                                                 metadata_str, content_str)
@@ -33,9 +39,13 @@ defmodule IElixir.Msg do
         parent_header = ExJSON.parse(parent_header_str)
         metadata      = ExJSON.parse(metadata_str)
         content       = ExJSON.parse(content_str)
-        IElixir.RawMsg[
-          uuids: uuids, header: header, parent_header: parent_header,
-          metadata: metadata, content: content, blobs: blobs
+
+        IElixir.Msg[
+          uuids: uuids,
+          msg_id: header["msg_id"], msg_type: binary_to_atom(header["msg_type"]),
+          session: header["session"], username: header["username"],
+          parent_header: parent_header, metadata: metadata,
+          content: content, blobs: blobs
         ]
     end
   end
@@ -43,11 +53,19 @@ defmodule IElixir.Msg do
   @doc """
   Encode a message to binary parts.
   """
-  def encode(msg = IElixir.RawMsg[]) do
-    # TODO: add signature
-    msg.uuids ++ ["<IDS|MSG>"] ++ [
-      ExJSON.generate(msg.header), ExJSON.generate(msg.parent_header),
-      ExJSON.generate(msg.metadata), ExJSON.generate(msg.content)] ++ msg.blobs
+  def encode(msg = IElixir.Msg[]) do
+    header_pairs = [
+      {"msg_id", msg.msg_id}, {"msg_type", msg.msg_type},
+      {"session", msg.session}, {"username", msg.username},
+    ]
+    header_str = ExJSON.generate(header_pairs)
+    parent_header_str = ExJSON.generate(msg.parent_header)
+    metadata_str = ExJSON.generate(msg.metadata)
+    content_str = ExJSON.generate(msg.content)
+    sig = IElixir.HMAC.compute_sig(header_str, parent_header_str,
+                                   metadata_str, content_str)
+    msg.uuids ++ ["<IDS|MSG>", sig, header_str, parent_header_str,
+                  metadata_str, content_str] ++ msg.blobs
   end
 end
 
@@ -68,14 +86,14 @@ defmodule IElixir.MsgBuffer do
 
   Returns either `{ :buffer, new_buffer }` or `{ :msg, decoded_msg }`.
 
-  See `IElixir.Msg.decode`.
+  See `IElixir.MsgConv.decode`.
   """
   def store_part(contents, flags, buffer) do
     buffer = [contents | buffer]
     if :rcvmore in flags do
       { :buffer, buffer }
     else
-      { :msg,  IElixir.Msg.decode(:lists.reverse(buffer)) }
+      { :msg,  IElixir.MsgConv.decode(:lists.reverse(buffer)) }
     end
   end
 end
