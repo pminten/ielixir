@@ -2,6 +2,7 @@ defmodule IElixir.Socket.Common do
   @moduledoc """
   Helper functions for all sockets.
   """
+  require Lager
 
   @doc """
   Create and bind an active socket, based on the desired port field (sans
@@ -12,12 +13,13 @@ defmodule IElixir.Socket.Common do
   """
   def make_socket(ctx, conn_info, port_field, type) do
     # Sanity check, points in the right direction if conn_info is missing
-    if conn_info == nil or not Dict.has_key?(conn_info, "transport") do
+    if conn_info == nil or not Keyword.has_key?(conn_info, :transport) do
       raise ArgumentError, message: "Invalid conn_info: #{inspect conn_info}"
     end
+    url = Enum.join([conn_info[:transport], "://", conn_info[:ip],
+                     ":", conn_info[binary_to_atom(port_field <> "_port")]])
+    Lager.info("Creating #{port_field} (#{type}) socket, bound to #{url}")
     { :ok, sock } = :erlzmq.socket(ctx, [type, { :active, type != :pub }])
-    url = Enum.join([conn_info["transport"], "://", conn_info["ip"],
-                     ":", conn_info[port_field <> "_port"]])
     :ok = :erlzmq.bind(sock, url)
     sock
   end

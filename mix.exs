@@ -5,13 +5,29 @@ defmodule Ielixir.Mixfile do
     [ app: :ielixir,
       version: "0.0.1",
       elixir: "~> 0.12.5-dev",
+      elixirc_options: elixirc_options(Mix.env),
       deps: deps,
       escript_main_module: IElixir ]
   end
 
+  def elixirc_options(env) when env in [:dev, :test] do
+    [exlager_level: :debug]
+  end
+
+  def elixirc_options(env) when env in [:prod] do
+    [exlager_level: :warning]
+  end
+
   # Configuration for the OTP application
   def application do
-    [mod: { IElixir, [ {:connection_file, "fake_conn_file"} ] }]
+    [mod: { IElixir, [ {:connection_file, "fake_conn_file"} ] },
+     applications: [:crypto, :exlager, :lager],
+     env: [
+       lager: [
+         error_logger_redirect: false,
+         crash_log: "/tmp/crash.log"
+       ]
+     ]]
   end
 
   # Returns the list of dependencies in the format:
@@ -21,6 +37,7 @@ defmodule Ielixir.Mixfile do
   # { :barbat, "~> 0.1", github: "elixir-lang/barbat" }
   defp deps do
     [ { :erlzmq, github: "zeromq/erlzmq2" },
-      { :jsex, github: "talentdeficit/jsex" } ]
+      { :exjson, github: "guedes/exjson" },
+      { :exlager, github: "khia/exlager" } ]
   end
 end

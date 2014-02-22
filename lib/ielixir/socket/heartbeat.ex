@@ -1,8 +1,9 @@
 defmodule IElixir.Socket.Heartbeat do
+  require Lager
+  alias IElixir.Socket.Common
+
   use GenServer.Behaviour
 
-  alias IElixir.Socket.Common
-  
   def start_link(opts) do
     :gen_server.start_link({ :local, :heartbeat }, __MODULE__, opts, [])
   end
@@ -20,7 +21,12 @@ defmodule IElixir.Socket.Heartbeat do
   end
 
   def handle_info({ :zmq, _, ts, [] }, state = { sock, id }) do
+    Lager.info("Got heartbeat: #{inspect ts}")
     Common.send_all(sock, [ id, ts ])
-    { :ok, state }
+    { :noreply, state }
+  end
+  def handle_info(msg, state) do
+    Lager.warn("Got unexpected message on hb process: #{inspect msg}")
+    { :noreply, state}
   end
 end

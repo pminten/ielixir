@@ -5,10 +5,13 @@ defrecord IElixir.RawMsg, uuids: [], header: nil, parent_header: nil,
   """
 end
 
+defexception IElixir.SignatureError, message: nil
+
 defmodule IElixir.Msg do
   @moduledoc """
   Message parsing/serialization.
   """
+  require Lager
 
   @doc """
   Decode a completely received message.
@@ -18,12 +21,18 @@ defmodule IElixir.Msg do
   def decode(parts) do
     case Enum.split_while(parts, &(&1 != "<IDS|MSG>")) do
       { _, [] } -> raise ArgumentError, message: "No <IDS|MSG> found"
-      { uuids, [ header_str, parent_header_str, 
+      { uuids, [ _sep, sig, header_str, parent_header_str, 
                  metadata_str, content_str | blobs ] } ->
-        { :ok, header }        = JSEX.decode!(header_str)
-        { :ok, parent_header } = JSEX.decode!(parent_header_str)
-        { :ok, metadata }      = JSEX.decode!(metadata_str)
-        { :ok, content }       = JSEX.decode!(content_str)
+        computed_sig = IElixir.HMAC.compute_sig(header_str, parent_header_str,
+                                                metadata_str, content_str)
+        if computed_sig != "" and sig != computed_sig do
+          raise IElixir.SignatureError, message:
+            "Invalid signature #{inspect computed_sig}, expected #{inspect sig}"
+        end
+        header        = ExJSON.parse(header_str)
+        parent_header = ExJSON.parse(parent_header_str)
+        metadata      = ExJSON.parse(metadata_str)
+        content       = ExJSON.parse(content_str)
         IElixir.RawMsg[
           uuids: uuids, header: header, parent_header: parent_header,
           metadata: metadata, content: content, blobs: blobs
@@ -35,9 +44,10 @@ defmodule IElixir.Msg do
   Encode a message to binary parts.
   """
   def encode(msg = IElixir.RawMsg[]) do
+    # TODO: add signature
     msg.uuids ++ ["<IDS|MSG>"] ++ [
-      JSEX.encode!(msg.header), JSEX.encode!(msg.parent_header),
-      JSEX.encode!(msg.metadata), JSEX.encode!(msg.content)] ++ msg.blobs
+      ExJSON.generate(msg.header), ExJSON.generate(msg.parent_header),
+      ExJSON.generate(msg.metadata), ExJSON.generate(msg.content)] ++ msg.blobs
   end
 end
 
@@ -62,7 +72,7 @@ defmodule IElixir.MsgBuffer do
   """
   def store_part(contents, flags, buffer) do
     buffer = [contents | buffer]
-    if :recvmore in flags do
+    if :rcvmore in flags do
       { :buffer, buffer }
     else
       { :msg,  IElixir.Msg.decode(:lists.reverse(buffer)) }

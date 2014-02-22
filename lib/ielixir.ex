@@ -1,4 +1,5 @@
 defmodule IElixir do
+  require Lager
   use Application.Behaviour
 
   # See http://elixir-lang.org/docs/stable/Application.Behaviour.html
@@ -7,14 +8,27 @@ defmodule IElixir do
     if not Keyword.has_key?(opts, :connection_file) do
       raise ArgumentError, message: "Connection file not specified" 
     end
-    conn_info = File.read!(opts[:connection_file]) |> JSEX.decode!
+    # Try to detect whether we're running in iex -S mix. This is of course a
+    # very ugly hack.
+    # TODO: Find a better way to pass the configuration information to the
+    # program.
+    if length(System.argv) > 0 do
+      conn_file = Enum.reverse(System.argv) |> hd
+    else
+      conn_file = opts[:connection_file]
+    end
+    conn_info = File.read!(conn_file)
+                |> ExJSON.parse
+                |> Enum.map(fn { k, v } -> { binary_to_atom(k), v } end)
     { :ok, ctx } = :erlzmq.context()
     { :ok, pid } = IElixir.Supervisor.start_link([conn_info: conn_info, zmq_ctx: ctx])
+    Lager.info("Startup done, conn file: #{conn_file}")
     { :ok, pid, [zmq_ctx: ctx] }
   end
 
   def stop(state) do
     :erlzmq.term(state[:zmq_ctx])
+    Lager.info("Shutdown done")
     :ok
   end
 

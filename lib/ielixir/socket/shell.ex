@@ -1,8 +1,9 @@
 defmodule IElixir.Socket.Shell do
-  use GenServer.Behaviour
-
+  require Lager
   alias IElixir.Socket.Common
   alias IElixir.MsgBuffer
+
+  use GenServer.Behaviour
 
   def start_link(opts) do
     :gen_server.start_link({ :local, :shell }, __MODULE__, opts, [])
@@ -21,16 +22,22 @@ defmodule IElixir.Socket.Shell do
 
   def handle_info({ :zmq, _, msg, flags }, { sock, buffer }) do
     case MsgBuffer.store_part(msg, flags, buffer) do
-      { :buffer, new_buffer } -> { :ok, { sock, new_buffer } }
+      { :buffer, new_buffer } ->
+        { :noreply, { sock, new_buffer } }
       { :msg, rawmsg } ->
         process(rawmsg)
-        { :ok, { sock, MsgBuffer.new } }
+        { :noreply, { sock, MsgBuffer.new } }
     end
+  end
+  def handle_info(msg, state) do
+    Lager.warn("Got unexpected message on shell process: #{inspect msg}")
+    { :noreply, state}
   end
 
   ## Internals
   
   defp process(rawmsg) do
+    Lager.info("Got shell: #{inspect rawmsg}")
     ## TODO
   end
 end
