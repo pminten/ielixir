@@ -16,6 +16,7 @@ defmodule IElixir.Supervisor do
       worker(IElixir.Socket.IOPub, [opts]),
     ]
 
-    supervise(children, strategy: :one_for_all)
+    # TODO: Switch to one_for_all once there are less bugs to worry about.
+    supervise(children, strategy: :one_for_one)
   end
 end

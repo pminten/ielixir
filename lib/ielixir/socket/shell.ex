@@ -1,7 +1,8 @@
 defmodule IElixir.Socket.Shell do
   require Lager
-  alias IElixir.Socket.Common
+  alias IElixir.Kernel
   alias IElixir.MsgBuffer
+  alias IElixir.Socket.Common
 
   use GenServer.Behaviour
 
@@ -45,7 +46,33 @@ defmodule IElixir.Socket.Shell do
     ]
     Common.respond(sock, msg, :kernel_info_reply, content)
   end
-  defp process(msg) do
+  defp process(msg = IElixir.Msg[msg_type: :execute_request], sock) do
+    req = IElixir.Kernel.ExecuteRequest[
+      code: msg.content["code"],
+      silent: msg.content["silent"],
+      store_history: msg.content["store_history"],
+      user_variables: msg.content["user_variables"],
+      user_expressions: msg.content["user_expressions"],
+      allow_stdin: msg.content["allow_stdin"],
+      msg_info: { msg.session, msg.username }
+    ]
+    content = case Kernel.execute_code(req) do
+      { :ok, exec_count, payload, user_vars, user_exprs } -> [
+          status: "ok", execution_count: exec_count,
+          payload: payload, user_variables: user_vars,
+          user_expressions: user_exprs
+        ]
+      { :error, exec_count, ename, evalue, traceback } -> [
+          status: "error", execution_count: exec_count,
+          ename: ename, evalue: evalue, traceback: traceback
+        ]
+      { :abort, exec_count } -> [
+          status: "abort", execution_count: exec_count
+        ]
+    end
+    Common.respond(sock, msg, :execute_reply, content)
+  end
+  defp process(msg, sock) do
     Lager.info("Got shell: #{inspect msg}")
     ## TODO
   end

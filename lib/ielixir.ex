@@ -18,7 +18,7 @@ defmodule IElixir do
       conn_file = opts[:connection_file]
     end
     conn_info = File.read!(conn_file)
-                |> ExJSON.parse
+                |> JSON.decode!
                 |> Enum.map(fn { k, v } -> { binary_to_atom(k), v } end)
     { :ok, ctx } = :erlzmq.context()
     { :ok, pid } = IElixir.Supervisor.start_link([conn_info: conn_info, zmq_ctx: ctx])

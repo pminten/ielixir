@@ -1,7 +1,7 @@
 [ "erlzmq": {:git, "git://github.com/zeromq/erlzmq2.git", "be8119254d13500bd01ca2d90637888187299393", []},
-  "exjson": {:git, "git://github.com/guedes/exjson.git", "e668c8513f57ac078e5fa6985a26e9d457aaaf7c", []},
   "exlager": {:git, "git://github.com/khia/exlager.git", "779a75350c6bf6a30b779f6d63e2d50a94c4d9a1", []},
   "goldrush": {:git, "git://github.com/DeadZen/goldrush.git", "71e63212f12c25827e0c1b4198d37d5d018a7fec", [tag: "0.1.6"]},
+  "json": {:git, "git://github.com/cblage/elixir-json.git", "02ca5d39657049a362f92f87850d9b811742879f", []},
   "lager": {:git, "https://github.com/basho/lager.git", "e118ae7a7100961ebc511e1614a9c0c5f5fc9b38", []},
   "quickrand": {:git, "https://github.com/okeuday/quickrand.git", "b4db3b4483b73107682fc593c2bc94be922ddcda", [tag: "v1.3.1"]},
   "uuid": {:git, "git://github.com/okeuday/uuid.git", "c28dd577b5ee57b8583e6d26417729c09089c206", []} ]

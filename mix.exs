@@ -37,7 +37,7 @@ defmodule Ielixir.Mixfile do
   # { :barbat, "~> 0.1", github: "elixir-lang/barbat" }
   defp deps do
     [ { :erlzmq, github: "zeromq/erlzmq2" },
-      { :exjson, github: "guedes/exjson" },
+      { :json, github: "cblage/elixir-json" },
       { :exlager, github: "khia/exlager" },
       { :uuid, github: "okeuday/uuid" } ]
   end

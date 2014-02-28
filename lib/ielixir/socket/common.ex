@@ -29,7 +29,6 @@ defmodule IElixir.Socket.Common do
   """
   def send_all(sock, [part]) do
     :ok = :erlzmq.send(sock, part, [])
-    Lager.info("Sent message to #{inspect sock}")
   end
   def send_all(sock, [part|parts]) do
     :ok = :erlzmq.send(sock, part, [:sndmore])
@@ -43,20 +42,13 @@ defmodule IElixir.Socket.Common do
   and sends the message.
   """
   def respond(sock, orig = IElixir.Msg[], msg_type, content) do
-    parent_header = [
-      msg_id: orig.msg_id,
-      msg_type: orig.msg_type,
-      session: orig.session,
-      username: orig.username
-    ]
     new_msg = orig.update(
-      msg_id: :uuid.uuid_to_string(:uuid.get_v4(), :binary_standard),
+      msg_id: :autogenerate, 
       msg_type: msg_type,
-      parent_header: parent_header,
+      parent_header: orig.full_header,
       content: content
     )
     parts = IElixir.MsgConv.encode(new_msg)
-    Lager.info("Sending #{inspect parts}")
     send_all(sock, parts)
   end
 end
